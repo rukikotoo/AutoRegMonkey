@@ -1,0 +1,511 @@
+
+  ___  ____  ____  ____  ____ ©
+ /__    /   ____/   /   ____/      17.0
+___/   /   /___/   /   /___/       MP—Parallel Edition
+
+ Statistics and Data Science       Copyright 1985-2021 StataCorp LLC
+                                   StataCorp
+                                   4905 Lakeway Drive
+                                   College Station, Texas 77845 USA
+                                   800-STATA-PC        https://www.stata.com
+                                   979-696-4600        stata@stata.com
+
+Stata license: Unlimited-user 64-core network perpetual
+Serial number: 18461036
+  Licensed to: TEAM BTCR
+               TEAM BTCR
+
+Notes:
+      1. Stata is running in batch mode.
+      2. Unicode is supported; see help unicode_advice.
+      3. More than 2 billion observations are allowed; see help obs_advice.
+      4. Maximum number of variables is set to 5,000; see help set_maxvar.
+
+. do D:/AutoRegMonkey/workspace/height_weight_regression.do 
+
+. capture log close
+
+. set more off
+
+. 
+. * ===========================================================================
+> =
+. * 身高体重关系回归分析
+. * 基于Bruce Hansen计量经济学教材方法
+. * ===========================================================================
+> =
+. 
+. log using "workspace/height_weight_regression.log", replace text
+(file D:\AutoRegMonkey\workspace/height_weight_regression.log not found)
+-------------------------------------------------------------------------------
+      name:  <unnamed>
+       log:  D:\AutoRegMonkey\workspace/height_weight_regression.log
+  log type:  text
+ opened on:   4 Dec 2025, 20:46:53
+
+. 
+. * ---------------------------------------------------------------------------
+> -
+. * 1. 数据导入与基本设置
+. * ---------------------------------------------------------------------------
+> -
+. 
+. clear all
+
+. set mem 100m
+set memory ignored.
+    Memory no longer needs to be set in modern Statas; memory adjustments are
+    performed on the fly automatically.
+
+. set seed 12345
+
+. 
+. * 导入预处理后的数据
+. import delimited using "workspace/height_weight_stata.csv", clear
+(encoding automatically selected: ISO-8859-1)
+(8 vars, 300 obs)
+
+. 
+. * 显示数据基本信息
+. describe
+
+Contains data
+ Observations:           300                  
+    Variables:             8                  
+-------------------------------------------------------------------------------
+Variable      Storage   Display    Value
+    name         type    format    label      Variable label
+-------------------------------------------------------------------------------
+id              int     %8.0g                 
+height_cm       float   %9.0g                 
+weight_kg       float   %9.0g                 
+bmi             float   %9.0g                 
+log_height      float   %9.0g                 
+log_weight      float   %9.0g                 
+height_std      float   %9.0g                 
+weight_std      float   %9.0g                 
+-------------------------------------------------------------------------------
+Sorted by: 
+     Note: Dataset has changed since last saved.
+
+. summarize
+
+    Variable |        Obs        Mean    Std. dev.       Min        Max
+-------------+---------------------------------------------------------
+          id |        300       150.5    86.74676          1        300
+   height_cm |        300     169.707    10.28539      137.7      199.6
+   weight_kg |        300    134.8577    6.764098      112.7      154.8
+         bmi |        300      47.145    4.470394       36.8       64.7
+  log_height |        300    5.132235      .06084   4.925077   5.296315
+-------------+---------------------------------------------------------
+  log_weight |        300    4.902958    .0504384    4.72473   5.042134
+  height_std |        300    4.89e-10           1  -3.111891   2.906357
+  weight_std |        300    4.04e-10           1  -3.275776   2.948262
+
+. 
+. * 重命名变量（如果需要）
+. rename height_cm height
+
+. rename weight_kg weight
+
+. rename bmi bmi
+  (all newnames==oldnames)
+
+. rename log_height ln_height
+
+. rename log_weight ln_weight
+
+. rename height_std height_z
+
+. rename weight_std weight_z
+
+. 
+. * 添加标签
+. label variable height "身高 (cm)"
+
+. label variable weight "体重 (kg)"
+
+. label variable bmi "身体质量指数"
+
+. label variable ln_height "身高自然对数"
+
+. label variable ln_weight "体重自然对数"
+
+. label variable height_z "标准化身高"
+
+. label variable weight_z "标准化体重"
+
+. 
+. * ---------------------------------------------------------------------------
+> -
+. * 2. 描述性统计与相关性分析
+. * ---------------------------------------------------------------------------
+> -
+. 
+. display "=== 描述性统计 ==="
+=== 描述性统计 ===
+
+. summarize height weight bmi ln_height ln_weight, detail
+
+                         身高 (cm)
+-------------------------------------------------------------
+      Percentiles      Smallest
+ 1%       145.05          137.7
+ 5%        153.7            142
+10%        156.7          144.4       Obs                 300
+25%       162.65          145.7       Sum of wgt.         300
+
+50%       169.85                      Mean            169.707
+                        Largest       Std. dev.      10.28539
+75%        176.7          192.4
+90%       183.25          193.9       Variance       105.7892
+95%       186.55            196       Skewness       .0258154
+99%       193.15          199.6       Kurtosis       2.986472
+
+                         体重 (kg)
+-------------------------------------------------------------
+      Percentiles      Smallest
+ 1%        117.9          112.7
+ 5%        123.3          116.3
+10%        126.6          117.7       Obs                 300
+25%       130.65          118.1       Sum of wgt.         300
+
+50%       134.75                      Mean           134.8577
+                        Largest       Std. dev.      6.764098
+75%       139.75          151.5
+90%       143.25          151.5       Variance       45.75302
+95%        145.2          154.1       Skewness      -.0820989
+99%        151.5          154.8       Kurtosis       3.296817
+
+                     身体质量指数
+-------------------------------------------------------------
+      Percentiles      Smallest
+ 1%         38.2           36.8
+ 5%        39.95             38
+10%         41.8             38       Obs                 300
+25%        43.95           38.4       Sum of wgt.         300
+
+50%         46.9                      Mean             47.145
+                        Largest       Std. dev.      4.470394
+75%         50.2           56.2
+90%         52.9           63.4       Variance       19.98442
+95%        54.05           64.2       Skewness       .4488015
+99%         59.8           64.7       Kurtosis       3.810482
+
+                     身高自然对数
+-------------------------------------------------------------
+      Percentiles      Smallest
+ 1%     4.977068       4.925077
+ 5%     5.035002       4.955827
+10%     5.054333       4.972587       Obs                 300
+25%     5.091601        4.98155       Sum of wgt.         300
+
+50%     5.134916                      Mean           5.132235
+                        Largest       Std. dev.        .06084
+75%     5.174453       5.259576
+90%     5.210847       5.267343       Variance       .0037015
+95%     5.228699       5.278115       Skewness      -.1586172
+99%     5.263459       5.296315       Kurtosis       3.088034
+
+                     体重自然对数
+-------------------------------------------------------------
+      Percentiles      Smallest
+ 1%     4.769835        4.72473
+ 5%     4.814619       4.756173
+10%     4.841032       4.768139       Obs                 300
+25%     4.872522       4.771532       Sum of wgt.         300
+
+50%     4.903421                      Mean           4.902958
+                        Largest       Std. dev.      .0504384
+75%     4.939855       5.020586
+90%     4.964592       5.020586       Variance        .002544
+95%     4.978112       5.037602       Skewness      -.2574552
+99%     5.020586       5.042134       Kurtosis       3.419854
+
+. 
+. * 相关性分析
+. display "=== 相关系数矩阵 ==="
+=== 相关系数矩阵 ===
+
+. pwcorr height weight bmi, sig star(0.05)
+
+             |   height   weight      bmi
+-------------+---------------------------
+      height |   1.0000 
+             |
+             |
+      weight |   0.6930*  1.0000 
+             |   0.0000
+             |
+         bmi |  -0.9177* -0.3621*  1.0000 
+             |   0.0000   0.0000
+             |
+
+. 
+. * 散点图
+. twoway (scatter weight height) (lfit weight height), ///
+>     title("身高与体重关系散点图") ///
+>     xtitle("身高 (cm)") ytitle("体重 (kg)") ///
+>     legend(label(1 "观测值") label(2 "拟合线"))
+
+. graph export "result/scatter_height_weight.png", replace
+(file result/scatter_height_weight.png not found)
+file result/scatter_height_weight.png saved as PNG format
+
+. 
+. * ---------------------------------------------------------------------------
+> -
+. * 3. 基本OLS回归分析
+. * ---------------------------------------------------------------------------
+> -
+. 
+. display "=== 模型1: 简单线性回归 (体重对身高) ==="
+=== 模型1: 简单线性回归 (体重对身高) ===
+
+. regress weight height
+
+      Source |       SS           df       MS      Number of obs   =       300
+-------------+----------------------------------   F(1, 298)       =    275.36
+       Model |   6570.0422         1   6570.0422   Prob > F        =    0.0000
+    Residual |  7110.11089       298  23.8594325   R-squared       =    0.4803
+-------------+----------------------------------   Adj R-squared   =    0.4785
+       Total |  13680.1531       299  45.7530204   Root MSE        =    4.8846
+
+------------------------------------------------------------------------------
+      weight | Coefficient  Std. err.      t    P>|t|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+      height |   .4557513   .0274646    16.59   0.000     .4017021    .5098005
+       _cons |   57.51348   4.669465    12.32   0.000     48.32418    66.70279
+------------------------------------------------------------------------------
+
+. estimates store model1
+
+. 
+. * 显示回归结果表格
+. esttab model1 using "result/model1_ols.rtf", ///
+>     b(3) se(3) star(* 0.10 ** 0.05 *** 0.01) ///
+>     title("模型1: 体重对身高的OLS回归") ///
+>     replace
+(file result/model1_ols.rtf not found)
+(output written to result/model1_ols.rtf)
+
+. 
+. * 计算拟合值、残差
+. predict yhat1, xb
+
+. predict resid1, residuals
+
+. 
+. * 回归线图
+. twoway (scatter weight height) (line yhat1 height, sort), ///
+>     title("模型1: OLS回归拟合") ///
+>     xtitle("身高 (cm)") ytitle("体重 (kg)") ///
+>     legend(label(1 "观测值") label(2 "拟合值"))
+
+. graph export "result/model1_fit.png", replace
+(file result/model1_fit.png not found)
+file result/model1_fit.png saved as PNG format
+
+. 
+. * ---------------------------------------------------------------------------
+> -
+. * 4. 对数-对数模型 (Constant Elasticity Model)
+. * ---------------------------------------------------------------------------
+> -
+. 
+. display "=== 模型2: 对数-对数模型 ==="
+=== 模型2: 对数-对数模型 ===
+
+. regress ln_weight ln_height
+
+      Source |       SS           df       MS      Number of obs   =       300
+-------------+----------------------------------   F(1, 298)       =    275.27
+       Model |  .365253675         1  .365253675   Prob > F        =    0.0000
+    Residual |  .395413319       298   .00132689   R-squared       =    0.4802
+-------------+----------------------------------   Adj R-squared   =    0.4784
+       Total |  .760666994       299  .002544037   Root MSE        =    .03643
+
+------------------------------------------------------------------------------
+   ln_weight | Coefficient  Std. err.      t    P>|t|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+   ln_height |   .5744764   .0346252    16.59   0.000     .5063355    .6426173
+       _cons |    1.95461   .1777171    11.00   0.000      1.60487    2.304349
+------------------------------------------------------------------------------
+
+. estimates store model2
+
+. 
+. * 显示回归结果
+. esttab model2 using "result/model2_loglog.rtf", ///
+>     b(3) se(3) star(* 0.10 ** 0.05 *** 0.01) ///
+>     title("模型2: 对数-对数模型") ///
+>     replace
+(file result/model2_loglog.rtf not found)
+(output written to result/model2_loglog.rtf)
+
+. 
+. * 计算弹性
+. display "身高对体重的弹性系数: " _b[ln_height]
+身高对体重的弹性系数: .57447638
+
+. display "弹性系数的95%置信区间: [" _b[ln_height] - 1.96*_se[ln_height] ", " /
+> //
+>     _b[ln_height] + 1.96*_se[ln_height] "]"
+弹性系数的95%置信区间: [.50661097, .64234178]
+
+. 
+. * ---------------------------------------------------------------------------
+> -
+. * 5. 包含二次项的模型 (检验非线性关系)
+. * ---------------------------------------------------------------------------
+> -
+. 
+. display "=== 模型3: 二次项模型 ==="
+=== 模型3: 二次项模型 ===
+
+. gen height_sq = height^2
+
+. regress weight height height_sq
+
+      Source |       SS           df       MS      Number of obs   =       300
+-------------+----------------------------------   F(2, 297)       =    137.45
+       Model |  6575.85477         2  3287.92739   Prob > F        =    0.0000
+    Residual |  7104.29832       297  23.9201964   R-squared       =    0.4807
+-------------+----------------------------------   Adj R-squared   =    0.4772
+       Total |  13680.1531       299  45.7530204   Root MSE        =    4.8908
+
+------------------------------------------------------------------------------
+      weight | Coefficient  Std. err.      t    P>|t|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+      height |    .773975   .6461369     1.20   0.232    -.4976117    2.045562
+   height_sq |  -.0009368   .0019005    -0.49   0.622    -.0046769    .0028033
+       _cons |   30.58879   54.81941     0.56   0.577     -77.2949    138.4725
+------------------------------------------------------------------------------
+
+. estimates store model3
+
+. 
+. * 检验二次项的显著性
+. test height_sq = 0
+
+ ( 1)  height_sq = 0
+
+       F(  1,   297) =    0.24
+            Prob > F =    0.6224
+
+. 
+. * 显示回归结果
+. esttab model3 using "result/model3_quadratic.rtf", ///
+>     b(3) se(3) star(* 0.10 ** 0.05 *** 0.01) ///
+>     title("模型3: 二次项模型") ///
+>     replace
+(file result/model3_quadratic.rtf not found)
+(output written to result/model3_quadratic.rtf)
+
+. 
+. * ---------------------------------------------------------------------------
+> -
+. * 6. 模型诊断与检验
+. * ---------------------------------------------------------------------------
+> -
+. 
+. * 6.1 异方差检验
+. display "=== 异方差检验 ==="
+=== 异方差检验 ===
+
+. 
+. * Breusch-Pagan检验
+. quietly regress weight height
+
+. estat hettest, iid rhs
+
+Breusch–Pagan/Cook–Weisberg test for heteroskedasticity 
+Assumption: i.i.d. error terms
+Variable: All independent variables
+
+H0: Constant variance
+
+    chi2(1) =   0.00
+Prob > chi2 = 0.9921
+
+. 
+. * White检验
+. quietly regress weight height
+
+. predict resid, residuals
+
+. gen resid_sq = resid^2
+
+. regress resid_sq height height_sq
+
+      Source |       SS           df       MS      Number of obs   =       300
+-------------+----------------------------------   F(2, 297)       =      0.80
+       Model |  1611.58647         2  805.793234   Prob > F        =    0.4525
+    Residual |  301016.674       297  1013.52416   R-squared       =    0.0053
+-------------+----------------------------------   Adj R-squared   =   -0.0014
+       Total |  302628.261       299  1012.13465   Root MSE        =    31.836
+
+------------------------------------------------------------------------------
+    resid_sq | Coefficient  Std. err.      t    P>|t|     [95% conf. interval]
+-------------+----------------------------------------------------------------
+      height |   -5.29683   4.205903    -1.26   0.209    -13.57398    2.980317
+   height_sq |   .0155989   .0123708     1.26   0.208    -.0087466    .0399443
+       _cons |   471.7102   356.8363     1.32   0.187    -230.5377    1173.958
+------------------------------------------------------------------------------
+
+. test height height_sq
+
+ ( 1)  height = 0
+ ( 2)  height_sq = 0
+
+       F(  2,   297) =    0.80
+            Prob > F =    0.4525
+
+. 
+. * 6.2 正态性检验 (Jarque-Bera检验)
+. display "=== 残差正态性检验 ==="
+=== 残差正态性检验 ===
+
+. quietly regress weight height
+
+. predict res_norm, residuals
+
+. sktest res_norm
+
+Skewness and kurtosis tests for normality
+                                                         ----- Joint test -----
+    Variable |       Obs   Pr(skewness)   Pr(kurtosis)   Adj chi2(2)  Prob>chi2
+-------------+-----------------------------------------------------------------
+    res_norm |       300         0.3392         0.5334          1.31     0.5193
+
+. 
+. * 残差直方图与Q-Q图
+. histogram res_norm, normal title("残差分布直方图")
+(bin=17, start=-13.662439, width=1.5263394)
+
+. graph export "result/residual_histogram.png", replace
+(file result/residual_histogram.png not found)
+file result/residual_histogram.png saved as PNG format
+
+. 
+. qnorm res_norm, title("残差Q-Q图")
+
+. graph export "result/residual_qqplot.png", replace
+(file result/residual_qqplot.png not found)
+file result/residual_qqplot.png saved as PNG format
+
+. 
+. * 6.3 影响点检测
+. display "=== 影响点检测 ==="
+=== 影响点检测 ===
+
+. quietly regress weight height
+
+. predict lev, leverage
+
+. predict cooksd, cooked
+option cooked not allowed
+r(198);
+
+end of do-file
+r(198);
