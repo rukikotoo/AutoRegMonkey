@@ -22,4 +22,5 @@ If you want to run `analysis.do` located in `D:/Project/`:
 powershell -Command "& \"D:/Stata/StataMP-64.exe\" /e do
       \"D:/AutoRegMonkey/workspace/analysis.do\""
 
+工作目录设在workspace，log文件也输出到workspace
 在根目录下读取同名的log文件，那是stata的输出
